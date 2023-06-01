@@ -68,4 +68,10 @@ vim.api.nvim_set_keymap('i', 'kj', '<Esc>', { noremap = true })
 
 -- Enable relative line numbering
 vim.opt.relativenumber = true
-
+-- Packer installation and setup
+require('packer').startup(function()
+  use 'neovim/nvim-lspconfig' -- LSP configuration
+  use 'hrsh7th/nvim-compe' -- Completion framework
+  use 'onsails/lspkind-nvim' -- LSP icons
+end)
+require'lspconfig'.tsserver.setup{}
