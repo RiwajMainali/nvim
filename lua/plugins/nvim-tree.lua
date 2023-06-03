@@ -23,6 +23,12 @@ Plugin.opts = {
 
 function Plugin.init()
   vim.keymap.set('n', '<leader>e', '<cmd>NvimTreeToggle<cr>')
-end
+	-- Move to the next buffer
+vim.api.nvim_set_keymap('n', '.', ':bnext<CR>', { noremap = true, silent = true })
+
+-- Move to the previous buffer
+vim.api.nvim_set_keymap('n', ',', ':bprevious<CR>', { noremap = true, silent = true })
+
+	end
 
 return Plugin

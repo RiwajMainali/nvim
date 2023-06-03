@@ -76,7 +76,10 @@ function Plugin.config()
       -- See :help lspconfig-setup
       lspconfig[server].setup({})
     end,
-    ['tsserver'] = function()
+    ['pylsp'] = function()
+			lspconfig.pylsp.setup()
+		end,
+		['tsserver'] = function()
       lspconfig.tsserver.setup({
         settings = {
           completions = {

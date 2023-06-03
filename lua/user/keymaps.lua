@@ -18,3 +18,9 @@ vim.keymap.set('n', '<leader>w', '<cmd>write<cr>')
 vim.keymap.set('n', '<leader>bq', '<cmd>bdelete<cr>')
 vim.keymap.set('n', '<leader>bl', '<cmd>buffer #<cr>')
 
+-- Map Esc to jk in insert mode
+vim.api.nvim_set_keymap('i', 'jk', '<Esc>', { noremap = true })
+
+-- Map Esc to kj in insert mode
+vim.api.nvim_set_keymap('i', 'kj', '<Esc>', { noremap = true })
+
