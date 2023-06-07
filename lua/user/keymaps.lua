@@ -24,3 +24,6 @@ vim.api.nvim_set_keymap('i', 'jk', '<Esc>', { noremap = true })
 -- Map Esc to kj in insert mode
 vim.api.nvim_set_keymap('i', 'kj', '<Esc>', { noremap = true })
 
+-- Define a mapping to switch between terminal and normal mode
+vim.api.nvim_set_keymap('t', '<leader>j', '<C-\\><C-n><C-w>N', { noremap = true })
+vim.api.nvim_set_keymap('n', '<Leader>k', '<C-w><C-w>', { noremap = true, silent = true })
