@@ -67,6 +67,8 @@ vim.opt.rtp:prepend(lazypath)
 --
 --  You can also configure plugins after the setup call,
 --    as they will be available in your neovim runtime.
+-- on_attach
+
 require('lazy').setup({
   -- NOTE: First, some plugins that don't require any configuration
 
@@ -113,7 +115,7 @@ require('lazy').setup({
   },
 
   -- Useful plugin to show you pending keybinds.
-  { 'folke/which-key.nvim', opts = {} },
+  { 'folke/which-key.nvim',  opts = {} },
   {
     -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
@@ -247,8 +249,53 @@ require('lazy').setup({
         end,
       },
     },
+  }, {
+  "nvim-tree/nvim-tree.lua",
+  version = "*",
+  lazy = false,
+  dependencies = {
+    "nvim-tree/nvim-web-devicons",
   },
-
+  config = function()
+    require("nvim-tree").setup {
+      view = {
+        width = 30,
+      },
+      renderer = {
+        root_folder_modifier = ":t",
+        -- These icons are visible when you install web-devicons
+        icons = {
+          glyphs = {
+            default = "",
+            symlink = "",
+            folder = {
+              arrow_open = "",
+              arrow_closed = "",
+              default = "",
+              open = "",
+              empty = "",
+              empty_open = "",
+              symlink = "",
+              symlink_open = "",
+            },
+            git = {
+              unstaged = "",
+              staged = "S",
+              unmerged = "",
+              renamed = "➜",
+              untracked = "U",
+              deleted = "",
+              ignored = "◌",
+            },
+          },
+        },
+      },
+      filters = {
+        dotfiles = true,
+      },
+    }
+  end,
+},
   {
     -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
@@ -672,3 +719,72 @@ vim.api.nvim_set_keymap('t', '<leader>j', '<C-\\><C-n><C-w>N', { noremap = true 
 vim.api.nvim_set_keymap('n', '<Leader>k', '<C-w><C-w>', { noremap = true, silent = true })
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+-- nvim tree
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
+-- set termguicolors to enable highlight groups
+vim.opt.termguicolors = true
+
+local api = require("nvim-tree.api")
+api.events.subscribe(api.events.Event.FileCreated, function(file)
+  vim.cmd("edit " .. file.fname)
+end)
+
+
+local function edit_or_open()
+  local node = api.tree.get_node_under_cursor()
+
+  if node.nodes ~= nil then
+    -- expand or collapse folder
+    api.node.open.edit()
+  else
+    -- open file
+    api.node.open.edit()
+    -- Close the tree if file was opened
+    api.tree.close()
+  end
+end
+
+-- open as vsplit on current node
+local function vsplit_preview()
+  local node = api.tree.get_node_under_cursor()
+
+  if node.nodes ~= nil then
+    -- expand or collapse folder
+    api.node.open.edit()
+  else
+    -- open file as vsplit
+    api.node.open.vertical()
+  end
+
+  -- Finally refocus on tree if it was lost
+  api.tree.focus()
+end
+-- global
+-- local function opts(desc)
+local function my_on_attach(bufnr)
+  local api = require "nvim-tree.api"
+
+  local function opts(desc)
+    return { desc = "nvim-tree: " .. desc, buffer = bufnr, noremap = true, silent = true, nowait = true }
+  end
+
+  -- default mappings
+  api.config.mappings.default_on_attach(bufnr)
+  -- custom mappings
+  vim.keymap.set("n", "l", edit_or_open, opts("Edit Or Open"))
+  vim.keymap.set("n", "L", vsplit_preview, opts("Vsplit Preview"))
+  vim.keymap.set("n", "h", api.tree.close, opts("Close"))
+  vim.keymap.set("n", "H", api.tree.collapse_all, opts("Collapse All"))
+  vim.keymap.set('n', '<C-t>', api.tree.change_root_to_parent, opts('Up'))
+  vim.keymap.set('n', '?', api.tree.toggle_help, opts('Help'))
+end
+
+-- pass to setup along with your other options
+require("nvim-tree").setup {
+  ---
+  on_attach = my_on_attach,
+  ---
+}
+vim.api.nvim_set_keymap("n", "<C-h>", ":NvimTreeToggle<cr>", { silent = true, noremap = true })
