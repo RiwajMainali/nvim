@@ -130,7 +130,6 @@ require('lazy').setup({
       },
       on_attach = function(bufnr)
         local gs = package.loaded.gitsigns
-
         local function map(mode, l, r, opts)
           opts = opts or {}
           opts.buffer = bufnr
@@ -196,14 +195,18 @@ require('lazy').setup({
     opts = {} -- this is equalent to setup({}) function
   },
   {
-    -- Theme inspired by Atom
-    'navarasu/onedark.nvim',
-    priority = 1000,
+    'ellisonleao/gruvbox.nvim',
     config = function()
-      vim.cmd.colorscheme 'onedark'
-    end,
-  },
+      -- Load the gruvbox colorscheme
+      require('gruvbox').setup({
+        -- Include your gruvbox configuration options here if needed
+      })
+      vim.cmd [[colorscheme gruvbox]]
 
+      -- Apply your overrides
+      vim.api.nvim_set_hl(0, 'Comment', { fg = '#ffffff' })
+    end
+  },
   {
     -- Set lualine as statusline
     'nvim-lualine/lualine.nvim',
@@ -211,7 +214,7 @@ require('lazy').setup({
     opts = {
       options = {
         icons_enabled = false,
-        theme = 'onedark',
+        theme = 'gruvbox',
         component_separators = '|',
         section_separators = '',
       },
@@ -301,10 +304,12 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     dependencies = {
       'nvim-treesitter/nvim-treesitter-textobjects',
+      build = ':TSUpdate',
+      highlight = {
+        enable = false,
+      },
     },
-    build = ':TSUpdate',
-  },
-
+  }
   -- NOTE: Next Step on Your Neovim Journey: Add/Configure additional "plugins" for kickstart
   --       These are some example plugins that I've included in the kickstart repository.
   --       Uncomment any of the lines below to enable them.
@@ -783,8 +788,9 @@ end
 
 -- pass to setup along with your other options
 require("nvim-tree").setup {
-  ---
+
   on_attach = my_on_attach,
-  ---
 }
 vim.api.nvim_set_keymap("n", "<C-h>", ":NvimTreeToggle<cr>", { silent = true, noremap = true })
+vim.api.nvim_set_keymap('v', 'd', '"_d', { noremap = true })
+vim.api.nvim_set_keymap('n', 'dd', '"_dd', { noremap = true })
