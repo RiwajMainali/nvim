@@ -77,7 +77,6 @@ require('lazy').setup({
   'tpope/vim-rhubarb',
   -- Detect tabstop and shiftwidth automatically
   'tpope/vim-sleuth',
-
   -- NOTE: This is where your plugins related to LSP can be installed.
   --  The configuration is done below. Search for lspconfig to find it below.
   {
@@ -204,7 +203,7 @@ require('lazy').setup({
       vim.cmd [[colorscheme gruvbox]]
 
       -- Apply your overrides
-      vim.api.nvim_set_hl(0, 'Comment', { fg = '#ffffff' })
+      -- vim.api.nvim_set_hl(0, 'Comment', { fg = '#fffff21' })
     end
   },
   {
@@ -794,3 +793,7 @@ require("nvim-tree").setup {
 vim.api.nvim_set_keymap("n", "<C-h>", ":NvimTreeToggle<cr>", { silent = true, noremap = true })
 vim.api.nvim_set_keymap('v', 'd', '"_d', { noremap = true })
 vim.api.nvim_set_keymap('n', 'dd', '"_dd', { noremap = true })
+vim.api.nvim_set_keymap('n', '<leader>t', ':term<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>u', ':tabnew %:p:h/<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<Leader>p', ':tabp<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<Leader>n', ':tabnext<CR>', { noremap = true, silent = true })
