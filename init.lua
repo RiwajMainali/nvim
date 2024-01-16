@@ -795,3 +795,6 @@ vim.api.nvim_set_keymap('v', 'd', '"_d', { noremap = true })
 vim.api.nvim_set_keymap('n', 'dd', '"_dd', { noremap = true })
 vim.api.nvim_set_keymap('n', '<leader>t', ':term<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>u', ':tabnew %:p:h/<CR>', { noremap = true, silent = true })
+vim.o.tabstop = 4
+vim.o.shiftwidth = 4
+vim.o.expandtab = true
