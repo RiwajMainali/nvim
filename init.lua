@@ -95,7 +95,12 @@ require('lazy').setup({
       'folke/neodev.nvim',
     },
   },
-
+  {
+    "NvChad/nvterm",
+    config = function()
+      require("nvterm").setup()
+    end,
+  },
   {
     -- Autocompletion
     'hrsh7th/nvim-cmp',
@@ -220,14 +225,14 @@ require('lazy').setup({
     },
   },
 
-  {
-    -- Add indentation guides even on blank lines
-    'lukas-reineke/indent-blankline.nvim',
-    -- Enable `lukas-reineke/indent-blankline.nvim`
-    -- See `:help ibl`
-    main = 'ibl',
-    opts = {},
-  },
+  -- {
+  -- Add indentation guides even on blank lines
+  -- 'lukas-reineke/indent-blankline.nvim',
+  -- Enable `lukas-reineke/indent-blankline.nvim`
+  -- See `:help ibl`
+  --  main = 'ibl',
+  --  opts = {},
+  --},
 
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
@@ -719,7 +724,6 @@ vim.api.nvim_set_keymap('i', 'kj', '<Esc>', { noremap = true })
 vim.keymap.set('n', '<leader>bl', '<cmd>buffer #<cr>')
 vim.api.nvim_set_keymap('i', 'jk', '<Esc>', { noremap = true })
 -- Define a mapping to switch between terminal and normal mode
-vim.api.nvim_set_keymap('t', '<leader>j', '<C-\\><C-n><C-w>N', { noremap = true })
 vim.api.nvim_set_keymap('n', '<Leader>k', '<C-w><C-w>', { noremap = true, silent = true })
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
@@ -783,6 +787,9 @@ local function my_on_attach(bufnr)
   vim.keymap.set("n", "H", api.tree.collapse_all, opts("Collapse All"))
   vim.keymap.set('n', '<C-t>', api.tree.change_root_to_parent, opts('Up'))
   vim.keymap.set('n', '?', api.tree.toggle_help, opts('Help'))
+  local ok, api2 = pcall(require, "nvim-tree.api")
+  assert(ok, "api module is not found")
+  vim.keymap.set("n", "<CR>", api2.node.open.tab_drop, opts("Tab drop"))
 end
 
 -- pass to setup along with your other options
@@ -790,11 +797,16 @@ require("nvim-tree").setup {
 
   on_attach = my_on_attach,
 }
+
+vim.api.nvim_set_keymap('n', "<M-f>", ":lua require('nvterm.terminal').toggle('float')<CR>", {noremap = true, silent = true})
+vim.api.nvim_set_keymap('t', "<M-f>", ":lua require('nvterm.terminal').toggle('float')<CR>", {noremap = true, silent = true})
 vim.api.nvim_set_keymap("n", "<C-h>", ":NvimTreeToggle<cr>", { silent = true, noremap = true })
-vim.api.nvim_set_keymap('v', 'd', '"_d', { noremap = true })
-vim.api.nvim_set_keymap('n', 'dd', '"_dd', { noremap = true })
+vim.api.nvim_set_keymap('v', 'D', '"_d', { noremap = true })
+vim.api.nvim_set_keymap('n', 'DD', '"_dd', { noremap = true })
 vim.api.nvim_set_keymap('n', '<leader>t', ':term<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>u', ':tabnew %:p:h/<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<C-s>', ':wa<CR>', { noremap = true, silent = true })
 vim.o.tabstop = 4
 vim.o.shiftwidth = 4
+vim.o.clipboard="unnamedplus"
 vim.o.expandtab = true
