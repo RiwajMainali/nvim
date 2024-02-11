@@ -96,6 +96,10 @@ require('lazy').setup({
     },
   },
   {
+    'xiyaowong/transparent.nvim',
+    lazy = false,
+  },
+  {
     "NvChad/nvterm",
     config = function()
       require("nvterm").setup()
@@ -787,9 +791,6 @@ local function my_on_attach(bufnr)
   vim.keymap.set("n", "H", api.tree.collapse_all, opts("Collapse All"))
   vim.keymap.set('n', '<C-t>', api.tree.change_root_to_parent, opts('Up'))
   vim.keymap.set('n', '?', api.tree.toggle_help, opts('Help'))
-  local ok, api2 = pcall(require, "nvim-tree.api")
-  assert(ok, "api module is not found")
-  vim.keymap.set("n", "<CR>", api2.node.open.tab_drop, opts("Tab drop"))
 end
 
 -- pass to setup along with your other options
@@ -798,15 +799,18 @@ require("nvim-tree").setup {
   on_attach = my_on_attach,
 }
 
-vim.api.nvim_set_keymap('n', "<M-f>", ":lua require('nvterm.terminal').toggle('float')<CR>", {noremap = true, silent = true})
-vim.api.nvim_set_keymap('t', "<M-f>", ":lua require('nvterm.terminal').toggle('float')<CR>", {noremap = true, silent = true})
+vim.api.nvim_set_keymap('n', "<M-f>", ":lua require('nvterm.terminal').toggle('float')<CR>",
+  { noremap = true, silent = true })
+vim.api.nvim_set_keymap('t', "<M-f>", ":lua require('nvterm.terminal').toggle('float')<CR>",
+  { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<C-h>", ":NvimTreeToggle<cr>", { silent = true, noremap = true })
 vim.api.nvim_set_keymap('v', 'D', '"_d', { noremap = true })
 vim.api.nvim_set_keymap('n', 'DD', '"_dd', { noremap = true })
 vim.api.nvim_set_keymap('n', '<leader>t', ':term<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>u', ':tabnew %:p:h/<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<C-s>', ':wa<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<C-s>', ':wa<CR> :Format<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('i', '<C-s>', '<Esc> :wa<CR> :Format<CR> i', { noremap = true, silent = true })
 vim.o.tabstop = 4
 vim.o.shiftwidth = 4
-vim.o.clipboard="unnamedplus"
+vim.o.clipboard = "unnamedplus"
 vim.o.expandtab = true
