@@ -14,8 +14,7 @@
 ========         |'-..................-'|   |____o|          ========
 ========         `"")----------------(""`   ___________      ========
 ========        /::::::::::|  |::::::::::\  \ no mouse \     ========
-========       /:::========|  |==hjkl==:::\  \ required \    ========
-========      '""""""""""""'  '""""""""""""'  '""""""""""'   ========
+========       /:::========|  |==hjkl==:::\  \ required \    ======== ========      '""""""""""""'  '""""""""""""'  '""""""""""'   ========
 ========                                                     ========
 =====================================================================
 =====================================================================
@@ -258,7 +257,7 @@ require('lazy').setup({
     'Pocco81/auto-save.nvim',
     config = function()
       require('auto-save').setup {
-        trigger_events = { 'InsertLeave', 'TextChanged' },
+        trigger_events = { 'CursorHold' }, -- only fires in normal mode
         condition = function(buf)
           local fn = vim.fn
           return fn.getbufvar(buf, '&modifiable') == 1 and fn.bufname(buf) ~= ''
@@ -712,22 +711,7 @@ require('lazy').setup({
     },
     opts = {
       notify_on_error = false,
-      format_on_save = function(bufnr)
-        -- disable "format_on_save lsp_fallback" for languages that don't
-        -- have a well standardized coding style. you can add additional
-        -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
-        local lsp_format_opt
-        if disable_filetypes[vim.bo[bufnr].filetype] then
-          lsp_format_opt = 'never'
-        else
-          lsp_format_opt = 'fallback'
-        end
-        return {
-          timeout_ms = 300,
-          lsp_format = lsp_format_opt,
-        }
-      end,
+      format_on_save = false,
       formatters_by_ft = {
         lua = { 'stylua' },
         -- conform can also run multiple formatters sequentially
@@ -738,7 +722,6 @@ require('lazy').setup({
       },
     },
   },
-
   { -- autocompletion
     'hrsh7th/nvim-cmp',
     event = 'insertenter',
@@ -1239,11 +1222,12 @@ local toggle_terminal = function()
     -- Start terminal if it's not already a terminal buffer
     if vim.bo[state.floating.buf].buftype ~= 'terminal' then
       vim.cmd.terminal()
+      vim.cmd('startinsert')
     end
 
     -- Map <leader>; in all modes to close the terminal
     local close_cmd = [[<cmd>lua vim.api.nvim_win_hide(]] .. state.floating.win .. [[)<CR>]]
-    vim.keymap.set({ 'n', 'i', 't' }, '<leader>;', function()
+    vim.keymap.set({ 'n', 't' }, '<leader>;', function()
       if vim.api.nvim_win_is_valid(state.floating.win) then
         vim.api.nvim_win_hide(state.floating.win)
       end
@@ -1267,6 +1251,24 @@ end
 -- create a floating window with default dimensions
 vim.api.nvim_create_user_command('Floaterminal', toggle_terminal, {})
 vim.keymap.set('n', '<leader>;', toggle_terminal)
-vim.keymap.set({ 'n', 'i', 'v', 't' }, "<leader>'", function()
+vim.keymap.set({ 'n', 'v', 't' }, "<leader>'", function()
   vim.cmd 'e ./'
-end, { silent = true, desc = 'Open file explorer at current dir' })
+end, { silent = true, desc = 'Open file explorer at current dir of terminal' })
+
+-- vim.api.nvim_create_autocmd('InsertEnter', {
+--   callback = function()
+--     vim.diagnostic.enable(false)
+--   end,
+-- })
+--
+-- vim.api.nvim_create_autocmd('InsertLeave', {
+--   callback = function()
+--     vim.diagnostic.enable()
+--     vim.diagnostic.config {
+--       severity = {
+--         min = vim.diagnostic.severity.ERROR,
+--         max = vim.diagnostic.severity.ERROR,
+--       },
+--     }
+--   end,
+-- }
