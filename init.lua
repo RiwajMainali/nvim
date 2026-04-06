@@ -39,11 +39,9 @@ What is Kickstart?
     reference for how Neovim integrates Lua.
     - :help lua-guide
     - (or HTML version): https://neovim.io/doc/user/lua-guide.html
-
 Kickstart Guide:
 
   TODO: The very first thing you should do is to run the command `:Tutor` in Neovim.
-
     If you don't know what this means, type the following:
       - <escape key>
       - :
@@ -86,6 +84,9 @@ P.S. You can delete this when you're done too. It's your config now! :)
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
+
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
@@ -93,7 +94,7 @@ vim.g.maplocalleader = ' '
 vim.g.have_nerd_font = false
 
 -- [[ Setting options ]]
--- See `:help vim.opt`
+-- See `:help vim.opt
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
 
@@ -679,7 +680,15 @@ require('lazy').setup({
         'stylua', -- used to format lua code
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
-
+      require('neo-tree').setup {
+        filesystem = {
+          filtered_items = {
+            visible = true,
+            hide_dotfiles = false,
+            hide_gitignored = false,
+          },
+        },
+      }
       require('mason-lspconfig').setup {
         handlers = {
           function(server_name)
@@ -711,7 +720,10 @@ require('lazy').setup({
     },
     opts = {
       notify_on_error = false,
-      format_on_save = false,
+      format_on_save = {
+        timeout_ms = 500,
+        lsp_format = 'fallback',
+      },
       formatters_by_ft = {
         lua = { 'stylua' },
         -- conform can also run multiple formatters sequentially
@@ -1164,6 +1176,7 @@ require('lazy').setup({
 })
 vim.api.nvim_set_keymap('i', 'kj', '<esc>', { noremap = true })
 vim.api.nvim_set_keymap('i', 'jk', '<esc>', { noremap = true })
+vim.api.nvim_set_keymap('n', '<leader>l', '<C-^>', { noremap = false })
 -- the line beneath this is called `modeline`. see `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
 --vim.opt.tabstop = 4
@@ -1222,9 +1235,8 @@ local toggle_terminal = function()
     -- Start terminal if it's not already a terminal buffer
     if vim.bo[state.floating.buf].buftype ~= 'terminal' then
       vim.cmd.terminal()
-      vim.cmd('startinsert')
     end
-
+    vim.cmd 'startinsert'
     -- Map <leader>; in all modes to close the terminal
     local close_cmd = [[<cmd>lua vim.api.nvim_win_hide(]] .. state.floating.win .. [[)<CR>]]
     vim.keymap.set({ 'n', 't' }, '<leader>;', function()
@@ -1251,9 +1263,33 @@ end
 -- create a floating window with default dimensions
 vim.api.nvim_create_user_command('Floaterminal', toggle_terminal, {})
 vim.keymap.set('n', '<leader>;', toggle_terminal)
-vim.keymap.set({ 'n', 'v', 't' }, "<leader>'", function()
-  vim.cmd 'e ./'
-end, { silent = true, desc = 'Open file explorer at current dir of terminal' })
+
+local toggle_neotree = function()
+  if vim.api.nvim_win_is_valid(state.floating.win) == true then
+    vim.api.nvim_win_hide(state.floating.win)
+  end
+  if vim.bo.filetype == 'neo-tree' then
+    vim.cmd 'Neotree close'
+  else
+    vim.cmd 'Neotree'
+  end
+end
+vim.api.nvim_create_autocmd('BufEnter', {
+  callback = function()
+    if vim.bo.filetype ~= 'neo-tree' and vim.fn.argc() == 0 then
+      vim.cmd 'Neotree close'
+    end
+  end,
+})
+vim.keymap.set({ 'n', 'v', 't' }, "<leader>'", toggle_neotree, { silent = true, desc = 'Toggle neo-tree' })
+
+vim.api.nvim_create_autocmd('VimEnter', {
+  callback = function()
+    if vim.fn.argc() == 0 then
+      toggle_neotree()
+    end
+  end,
+})
 
 -- vim.api.nvim_create_autocmd('InsertEnter', {
 --   callback = function()
