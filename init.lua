@@ -710,7 +710,7 @@ require('lazy').setup({
     cmd = { 'ConformInfo' },
     keys = {
       {
-        '<leader>f',
+        '<leader>m',
         function()
           require('conform').format { async = true, lsp_format = 'fallback' }
         end,
@@ -720,10 +720,7 @@ require('lazy').setup({
     },
     opts = {
       notify_on_error = false,
-      format_on_save = {
-        timeout_ms = 500,
-        lsp_format = 'fallback',
-      },
+      format_on_save = false,
       formatters_by_ft = {
         lua = { 'stylua' },
         -- conform can also run multiple formatters sequentially
@@ -1291,6 +1288,9 @@ vim.api.nvim_create_autocmd('VimEnter', {
   end,
 })
 
+vim.keymap.set('n', '<leader>m', function()
+  require('conform').format { async = true }
+end, { desc = 'Format buffer' })
 -- vim.api.nvim_create_autocmd('InsertEnter', {
 --   callback = function()
 --     vim.diagnostic.enable(false)
