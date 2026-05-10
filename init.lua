@@ -779,7 +779,18 @@ require('lazy').setup({
             luasnip.lsp_expand(args.body)
           end,
         },
+        preselect = cmp.PreselectMode.None,
         completion = { completeopt = 'menu,menuone,noinsert' },
+        sorting = {
+          comparators = {
+            cmp.config.compare.exact,
+            cmp.config.compare.score,
+            cmp.config.compare.recently_used,
+            cmp.config.compare.kind,
+            cmp.config.compare.length,
+            cmp.config.compare.order,
+          },
+        },
 
         -- for an understanding of why these mappings were
         -- chosen, you will need to read `:help ins-completion`
@@ -1288,6 +1299,8 @@ vim.api.nvim_create_autocmd('VimEnter', {
   end,
 })
 
+vim.keymap.set('i', ';;', '<Esc>A',{ desc = 'end of line' })
+vim.keymap.set('v', ';;', '$',{ desc = 'end of line' })
 vim.keymap.set('n', '<leader>m', function()
   require('conform').format { async = true }
 end, { desc = 'Format buffer' })
