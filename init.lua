@@ -721,6 +721,9 @@ require('lazy').setup({
     opts = {
       notify_on_error = false,
       format_on_save = false,
+      formatters = {
+        stylua = { prepend_args = { '--indent-type', 'Spaces', '--indent-width', '4' } },
+      },
       formatters_by_ft = {
         lua = { 'stylua' },
         -- conform can also run multiple formatters sequentially
@@ -1302,8 +1305,12 @@ vim.api.nvim_create_autocmd('VimEnter', {
 vim.keymap.set('i', ';;', '<Esc>A',{ desc = 'end of line' })
 vim.keymap.set('v', ';;', '$',{ desc = 'end of line' })
 vim.keymap.set('n', '<leader>m', function()
-  require('conform').format { async = true }
-end, { desc = 'Format buffer' })
+  vim.bo.expandtab = true
+  vim.bo.shiftwidth = 4
+  vim.bo.tabstop = 4
+  vim.bo.softtabstop = 4
+  require('conform').format { async = true, lsp_format = 'fallback' }
+end, { desc = 'Format buffer (4-space indent)' })
 -- vim.api.nvim_create_autocmd('InsertEnter', {
 --   callback = function()
 --     vim.diagnostic.enable(false)
