@@ -723,9 +723,12 @@ require('lazy').setup({
       format_on_save = false,
       formatters = {
         stylua = { prepend_args = { '--indent-type', 'Spaces', '--indent-width', '4' } },
+        ['clang-format'] = { prepend_args = { '--style={BasedOnStyle: LLVM, IndentWidth: 4}' } },
       },
       formatters_by_ft = {
         lua = { 'stylua' },
+        c = { 'clang-format' },
+        cpp = { 'clang-format' },
         -- conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
