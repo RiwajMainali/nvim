@@ -1298,6 +1298,23 @@ local function focused_file_dir()
   return nil
 end
 
+-- True when the shell itself owns the terminal, i.e. no program (gdb, a REPL, ...)
+-- is running in the foreground that would receive our keystrokes instead.
+local function shell_at_prompt(pid)
+  local pgid, tpgid = vim.fn.system({ 'ps', '-o', 'pgid=,tpgid=', '-p', tostring(pid) }):match '(%d+)%s+(%d+)'
+  return pgid ~= nil and pgid == tpgid
+end
+
+-- Actual current directory of the shell process (tracks manual cd's).
+local function shell_cwd(pid)
+  local proc = vim.uv.fs_readlink('/proc/' .. pid .. '/cwd') -- linux
+  if proc then
+    return proc
+  end
+  local out = vim.fn.system { 'lsof', '-a', '-p', tostring(pid), '-d', 'cwd', '-Fn' } -- macos
+  return out:match '\nn([^\n]+)'
+end
+
 local toggle_terminal = function()
   -- Capture the focused file's dir before the float steals focus.
   local dir = focused_file_dir()
@@ -1308,12 +1325,16 @@ local toggle_terminal = function()
 
     if vim.bo[state.floating.buf].buftype ~= 'terminal' then
       -- First open: spawn the shell rooted in the focused file's directory.
-      vim.fn.termopen(vim.o.shell, dir and { cwd = dir } or {})
+      vim.fn.jobstart({ vim.o.shell }, { term = true, cwd = dir })
     elseif dir then
-      -- Reusing the existing shell: cd it to the focused file's directory.
+      -- Reusing the existing shell: cd it to the focused file's directory, unless
+      -- it's already there or a program is running in the foreground.
       local chan = vim.b[state.floating.buf].terminal_job_id
-      if chan then
-        vim.fn.chansend(chan, 'cd ' .. vim.fn.shellescape(dir) .. '\r')
+      local pid = chan and vim.fn.jobpid(chan)
+      if pid and shell_at_prompt(pid) and shell_cwd(pid) ~= vim.uv.fs_realpath(dir) then
+        -- zsh push-line (Esc q) stashes any half-typed command; after the cd runs,
+        -- zsh restores it at the new prompt without executing it.
+        vim.fn.chansend(chan, '\27q' .. 'cd ' .. vim.fn.shellescape(dir) .. '\r')
       end
     end
     vim.cmd 'startinsert'
