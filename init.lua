@@ -1280,15 +1280,41 @@ local function create_floating_window(opts)
 
   return { buf = buf, win = win }
 end
+-- Directory of the file in the currently-focused buffer, or nil for terminals,
+-- neo-tree, and other non-file buffers (no sensible directory to use there).
+local function focused_file_dir()
+  local buf = vim.api.nvim_get_current_buf()
+  if vim.bo[buf].buftype ~= '' then
+    return nil
+  end
+  local name = vim.api.nvim_buf_get_name(buf)
+  if name == '' then
+    return nil
+  end
+  local dir = vim.fn.fnamemodify(name, ':p:h')
+  if vim.fn.isdirectory(dir) == 1 then
+    return dir
+  end
+  return nil
+end
+
 local toggle_terminal = function()
+  -- Capture the focused file's dir before the float steals focus.
+  local dir = focused_file_dir()
   local is_open = vim.api.nvim_win_is_valid(state.floating.win)
 
   if not is_open then
     state.floating = create_floating_window { buf = state.floating.buf }
 
-    -- Start terminal if it's not already a terminal buffer
     if vim.bo[state.floating.buf].buftype ~= 'terminal' then
-      vim.cmd.terminal()
+      -- First open: spawn the shell rooted in the focused file's directory.
+      vim.fn.termopen(vim.o.shell, dir and { cwd = dir } or {})
+    elseif dir then
+      -- Reusing the existing shell: cd it to the focused file's directory.
+      local chan = vim.b[state.floating.buf].terminal_job_id
+      if chan then
+        vim.fn.chansend(chan, 'cd ' .. vim.fn.shellescape(dir) .. '\r')
+      end
     end
     vim.cmd 'startinsert'
     -- Map <leader>; in all modes to close the terminal
