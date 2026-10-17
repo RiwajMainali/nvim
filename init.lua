@@ -158,7 +158,7 @@ vim.opt.scrolloff = 10
 
 -- What to store in a session (used by auto-session to restore the previous
 -- session automatically when nvim is launched with no file arguments).
-vim.o.sessionoptions = 'blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions'
+vim.o.sessionoptions = 'blank,buffers,curdir,folds,help,tabpages,winsize,winpos,localoptions'
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -1240,46 +1240,11 @@ vim.opt.softtabstop = 4
 --
 vim.keymap.set('t', '<esc><esc>', '<c-\\><c-n>')
 
-local state = {
-  floating = {
-    buf = -1,
-    win = -1,
-  },
-}
+-- [[ Floating terminals: one per folder (snacks.nvim) ]]
+-- <leader>; shows the terminal for the focused file's folder (created on first use),
+-- so nothing ever has to be typed into a shell to change directory.
+-- <count><leader>; or <M-n> opens extra terminals in a folder; <M-]>/<M-[> cycle them.
 
-local function create_floating_window(opts)
-  opts = opts or {}
-  local width = opts.width or math.floor(vim.o.columns * 0.8)
-  local height = opts.height or math.floor(vim.o.lines * 0.8)
-
-  -- calculate the position to center the window
-  local col = math.floor((vim.o.columns - width) / 2)
-  local row = math.floor((vim.o.lines - height) / 2)
-
-  -- create a buffer
-  local buf = nil
-  if vim.api.nvim_buf_is_valid(opts.buf) then
-    buf = opts.buf
-  else
-    buf = vim.api.nvim_create_buf(false, true) -- no file, scratch buffer
-  end
-
-  -- define window configuration
-  local win_config = {
-    relative = 'editor',
-    width = width,
-    height = height,
-    col = col,
-    row = row,
-    style = 'minimal', -- no borders or extra ui elements
-    border = 'rounded',
-  }
-
-  -- create the floating window
-  local win = vim.api.nvim_open_win(buf, true, win_config)
-
-  return { buf = buf, win = win }
-end
 -- Directory of the file in the currently-focused buffer, or nil for terminals,
 -- neo-tree, and other non-file buffers (no sensible directory to use there).
 local function focused_file_dir()
@@ -1298,77 +1263,84 @@ local function focused_file_dir()
   return nil
 end
 
--- True when the shell itself owns the terminal, i.e. no program (gdb, a REPL, ...)
--- is running in the foreground that would receive our keystrokes instead.
-local function shell_at_prompt(pid)
-  local pgid, tpgid = vim.fn.system({ 'ps', '-o', 'pgid=,tpgid=', '-p', tostring(pid) }):match '(%d+)%s+(%d+)'
-  return pgid ~= nil and pgid == tpgid
+local function term_opts(cwd, count)
+  local title = vim.fn.fnamemodify(cwd, ':~') .. (count > 1 and (' #' .. count) or '')
+  return {
+    cwd = cwd,
+    count = count,
+    win = { position = 'float', border = 'rounded', width = 0.8, height = 0.8, title = ' ' .. title .. ' ', title_pos = 'center' },
+  }
 end
 
--- Actual current directory of the shell process (tracks manual cd's).
-local function shell_cwd(pid)
-  local proc = vim.uv.fs_readlink('/proc/' .. pid .. '/cwd') -- linux
-  if proc then
-    return proc
-  end
-  local out = vim.fn.system { 'lsof', '-a', '-p', tostring(pid), '-d', 'cwd', '-Fn' } -- macos
-  return out:match '\nn([^\n]+)'
-end
-
-local toggle_terminal = function()
-  -- Capture the focused file's dir before the float steals focus.
-  local dir = focused_file_dir()
-  local is_open = vim.api.nvim_win_is_valid(state.floating.win)
-
-  if not is_open then
-    state.floating = create_floating_window { buf = state.floating.buf }
-
-    if vim.bo[state.floating.buf].buftype ~= 'terminal' then
-      -- First open: spawn the shell rooted in the focused file's directory.
-      vim.fn.jobstart({ vim.o.shell }, { term = true, cwd = dir })
-    elseif dir then
-      -- Reusing the existing shell: cd it to the focused file's directory, unless
-      -- it's already there or a program is running in the foreground.
-      local chan = vim.b[state.floating.buf].terminal_job_id
-      local pid = chan and vim.fn.jobpid(chan)
-      if pid and shell_at_prompt(pid) and shell_cwd(pid) ~= vim.uv.fs_realpath(dir) then
-        -- zsh push-line (Esc q) stashes any half-typed command; after the cd runs,
-        -- zsh restores it at the new prompt without executing it.
-        vim.fn.chansend(chan, '\27q' .. 'cd ' .. vim.fn.shellescape(dir) .. '\r')
-      end
+local function hide_terminals(except)
+  for _, t in ipairs(Snacks.terminal.list()) do
+    if t ~= except and t:win_valid() then
+      t:hide()
     end
-    vim.cmd 'startinsert'
-    -- Map <leader>; in all modes to close the terminal
-    local close_cmd = [[<cmd>lua vim.api.nvim_win_hide(]] .. state.floating.win .. [[)<CR>]]
-    vim.keymap.set({ 'n', 't' }, '<leader>;', function()
-      if vim.api.nvim_win_is_valid(state.floating.win) then
-        vim.api.nvim_win_hide(state.floating.win)
-      end
-    end, { buffer = state.floating.buf, silent = true, desc = 'close floating terminal' })
-  else
-    vim.api.nvim_win_hide(state.floating.win)
   end
 end
--- local toggle_terminal = function()
---   if not vim.api.nvim_win_is_valid(state.floating.win) then
---     state.floating = create_floating_window { buf = state.floating.buf }
---     if vim.bo[state.floating.buf].buftype ~= 'terminal' then
---       vim.cmd.terminal()
---     end
---   else
---     vim.api.nvim_win_hide(state.floating.win)
---   end
--- end
 
--- example usage:
--- create a floating window with default dimensions
+local function toggle_terminal()
+  if vim.b.snacks_terminal then
+    -- inside a terminal: hide it
+    return hide_terminals()
+  end
+  local term, created = Snacks.terminal.get(nil, term_opts(focused_file_dir() or vim.fn.getcwd(), vim.v.count1))
+  hide_terminals(term)
+  if not created then
+    term:toggle()
+  end
+end
+
+local function cycle_terminal(step)
+  local terms = Snacks.terminal.list()
+  table.sort(terms, function(a, b)
+    return a.buf < b.buf
+  end)
+  local cur = vim.api.nvim_get_current_buf()
+  for i, t in ipairs(terms) do
+    if t.buf == cur then
+      local nxt = terms[(i - 1 + step) % #terms + 1]
+      if nxt ~= t then
+        t:hide()
+        nxt:show():focus()
+      end
+      return
+    end
+  end
+end
+
+-- open another terminal in the current terminal's (or focused file's) folder
+local function new_terminal_here()
+  local info = vim.b.snacks_terminal
+  local cwd = info and info.cwd or focused_file_dir() or vim.fn.getcwd()
+  local used = {}
+  for _, t in ipairs(Snacks.terminal.list()) do
+    local ti = vim.b[t.buf].snacks_terminal
+    if ti and ti.cwd == cwd then
+      used[ti.id] = true
+    end
+  end
+  local n = 1
+  while used[n] do
+    n = n + 1
+  end
+  hide_terminals()
+  Snacks.terminal.get(nil, term_opts(cwd, n))
+end
+
 vim.api.nvim_create_user_command('Floaterminal', toggle_terminal, {})
-vim.keymap.set('n', '<leader>;', toggle_terminal)
+vim.keymap.set({ 'n', 't' }, '<leader>;', toggle_terminal, { desc = 'Toggle terminal for this folder' })
+vim.keymap.set({ 'n', 't' }, '<M-]>', function()
+  cycle_terminal(1)
+end, { desc = 'Next terminal' })
+vim.keymap.set({ 'n', 't' }, '<M-[>', function()
+  cycle_terminal(-1)
+end, { desc = 'Previous terminal' })
+vim.keymap.set({ 'n', 't' }, '<M-n>', new_terminal_here, { desc = 'New terminal in this folder' })
 
 local toggle_neotree = function()
-  if vim.api.nvim_win_is_valid(state.floating.win) == true then
-    vim.api.nvim_win_hide(state.floating.win)
-  end
+  hide_terminals()
   if vim.bo.filetype == 'neo-tree' then
     vim.cmd 'Neotree close'
   else
