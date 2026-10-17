@@ -166,6 +166,22 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
+-- Show the full diagnostic message in a wrapped float when the cursor rests on a line
+-- (inline virtual text gets clipped at the window edge)
+vim.diagnostic.config { virtual_text = false, float = { border = 'rounded', source = 'if_many' } }
+local diag_float_auto = true
+vim.api.nvim_create_autocmd('CursorHold', {
+  group = vim.api.nvim_create_augroup('diagnostic-float', { clear = true }),
+  callback = function()
+    if diag_float_auto then vim.diagnostic.open_float(nil, { focus = false, scope = 'line' }) end
+  end,
+})
+vim.keymap.set('n', '<leader>tf', function()
+  diag_float_auto = not diag_float_auto
+  vim.notify('Diagnostic float: ' .. (diag_float_auto and 'on' or 'off'))
+end, { desc = '[T]oggle diagnostic [F]loat' })
+vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror message' })
+
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
 -- is not what someone will guess without a bit more experience.
@@ -560,6 +576,9 @@ require('lazy').setup({
           -- execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your lsp for this to activate.
           map('<leader>ca', vim.lsp.buf.code_action, '[c]ode [a]ction', { 'n', 'x' })
+
+          -- hover docs; also shows a note for C built-in operators like ?: (clangd has none)
+          map('K', require('custom.op_hover').hover, 'hover documentation')
 
           -- warn: this is not goto definition, this is goto declaration.
           --  for example, in c this would take you to the header.
