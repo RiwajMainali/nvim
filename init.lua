@@ -156,6 +156,10 @@ vim.opt.cursorline = true
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
 
+-- What to store in a session (used by auto-session to restore the previous
+-- session automatically when nvim is launched with no file arguments).
+vim.o.sessionoptions = 'blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions'
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -274,6 +278,17 @@ require('lazy').setup({
         topdelete = { text = '‾' },
         changedelete = { text = '~' },
       },
+    },
+  },
+  { -- automatically save/restore a session per directory, so bare `nvim`
+    -- reopens the previous session instead of an empty editor
+    'rmagatti/auto-session',
+    lazy = false, -- must load at startup, or restore never fires on bare `nvim`
+    opts = {
+      suppressed_dirs = { '~/', '~/Downloads', '/', '/tmp' }, -- don't save sessions here
+      -- auto_save / auto_restore / auto_create default to true (per-directory);
+      -- close_unsupported_windows=true and lazy_support=true are also defaults, so
+      -- neo-tree is stripped before save and lazy.nvim timing is handled for us.
     },
   },
   {
