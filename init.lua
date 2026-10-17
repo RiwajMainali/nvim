@@ -163,6 +163,12 @@ vim.opt.scrolloff = 10
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
+-- Shift+Backspace deletes the word before the cursor, staying in insert mode
+-- (same as the native <C-w>; needs a terminal that speaks the kitty keyboard
+-- protocol -- kitty, which this config runs under, does)
+vim.keymap.set('i', '<S-BS>', '<C-w>', { desc = 'Delete word before cursor' })
+vim.keymap.set('c', '<S-BS>', '<C-w>')
+
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
